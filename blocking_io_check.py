@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-import os, sys, platform, argparse
+import os
+import sys
+import platform
+import argparse
 import ctypes as ct
-import socket, struct
+import socket
+import struct
 
 DEFAULT_BPF_FILE = "trace.bpf.c"
 
