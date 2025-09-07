@@ -39,16 +39,3 @@ The tool will trace all Python socket I/O operations and display:
 - epoll usage
 - Remote peer information
 
-## Development
-
-### Linting and Formatting
-
-This project uses Ruff for code quality:
-
-```bash
-# Check code
-ruff check .
-
-# Format code  
-ruff format .
-```
