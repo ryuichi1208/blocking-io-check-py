@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-from bcc import BPF
 import platform
 import sys
 import ctypes as ct
-import os, socket, struct
+import os
+import socket
+import struct
 
 TARGET_COMM = b"python3"  # 例: b"python" に変更可
 
@@ -297,6 +298,7 @@ TRACEPOINT_PROBE(syscalls, sys_enter_read) {
 }
 """
 
+
 class IoEvt(ct.Structure):
     _fields_ = [
         ("ts", ct.c_ulonglong),
@@ -313,9 +315,17 @@ class IoEvt(ct.Structure):
         ("raddr6", ct.c_ubyte * 16),
     ]
 
-def ntohs(x): return socket.ntohs(x)
-def ipv4_ntoa(n:int)->str: return socket.inet_ntoa(struct.pack("!I", socket.ntohl(n)))
-def ipv6_ntoa(b)->str: return socket.inet_ntop(socket.AF_INET6, bytes(b))
+
+def ntohs(x):
+    return socket.ntohs(x)
+
+
+def ipv4_ntoa(n: int) -> str:
+    return socket.inet_ntoa(struct.pack("!I", socket.ntohl(n)))
+
+
+def ipv6_ntoa(b) -> str:
+    return socket.inet_ntop(socket.AF_INET6, bytes(b))
 
 
 def print_event(cpu, data, size):
@@ -331,9 +341,12 @@ def print_event(cpu, data, size):
         peer = "-"
     else:
         peer = f"fam={e.family}"
-    print(f"pid={e.pid:>6} comm={e.comm.decode(errors='ignore'):<8} fd={e.fd:<3} "
-          f"op={ops[e.op]:8} nonblock={e.nonblock} dontwait={e.msg_dontwait} epoll={e.via_epoll} "
-          f"peer={peer}")
+    print(
+        f"pid={e.pid:>6} comm={e.comm.decode(errors='ignore'):<8} fd={e.fd:<3} "
+        f"op={ops[e.op]:8} nonblock={e.nonblock} dontwait={e.msg_dontwait} epoll={e.via_epoll} "
+        f"peer={peer}"
+    )
+
 
 def main():
     src = bpf_src.replace("{TARGET_COMM}", TARGET_COMM.decode())
@@ -341,17 +354,23 @@ def main():
 
     libc = "/lib/x86_64-linux-gnu/libc.so.6"
     if not os.path.exists(libc):
-        for p in ["/usr/lib/x86_64-linux-gnu/libc.so.6", "/lib64/libc.so.6", "/usr/lib64/libc.so.6"]:
+        for p in [
+            "/usr/lib/x86_64-linux-gnu/libc.so.6",
+            "/lib64/libc.so.6",
+            "/usr/lib64/libc.so.6",
+        ]:
             if os.path.exists(p):
                 libc = p
                 break
 
-    b.attach_uprobe(name=libc, sym="fcntl",     fn_name="uprobe_fcntl")
-    b.attach_uprobe(name=libc, sym="ioctl",     fn_name="uprobe_ioctl")
+    b.attach_uprobe(name=libc, sym="fcntl", fn_name="uprobe_fcntl")
+    b.attach_uprobe(name=libc, sym="ioctl", fn_name="uprobe_ioctl")
     b.attach_uprobe(name=libc, sym="epoll_ctl", fn_name="uprobe_epoll_ctl")
 
     b["events"].open_perf_buffer(print_event)
-    print("Tracing Python socket I/O (connect/accept + send/recv + read/write + recvmsg-exit + netlink)… Ctrl-C to stop")
+    print(
+        "Tracing Python socket I/O (connect/accept + send/recv + read/write + recvmsg-exit + netlink)… Ctrl-C to stop"
+    )
     while True:
         b.perf_buffer_poll()
 
@@ -381,6 +400,8 @@ def check_environment():
 
     print(f"Environment OK: Linux kernel {major}.{minor}+ detected")
 
+
 if __name__ == "__main__":
     check_environment()
+    from bcc import BPF
     main()
