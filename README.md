@@ -25,13 +25,47 @@ This tool uses eBPF (extended Berkeley Packet Filter) to trace Python socket I/O
 
 ## Usage
 
-Run as root:
+### Basic Usage
+
+Run as root to trace all Python processes:
 
 ```bash
 sudo uv run blocking_io_check.py
 ```
 
-The tool will trace all Python socket I/O operations and display:
+### Filter by PID
+
+Trace a specific process by PID:
+
+```bash
+sudo uv run blocking_io_check.py --pid 12345
+```
+
+### Filter by Process Name
+
+Trace processes with a different name (default is "python3"):
+
+```bash
+sudo uv run blocking_io_check.py -p python
+sudo uv run blocking_io_check.py -p myapp
+```
+
+### Additional Options
+
+```bash
+# Hide DNS traffic (port 53)
+sudo uv run blocking_io_check.py --hide-dns
+
+# Hide Netlink socket traffic  
+sudo uv run blocking_io_check.py --hide-netlink
+
+# Combine options
+sudo uv run blocking_io_check.py --pid 12345 --hide-dns
+```
+
+### Output
+
+The tool will trace socket I/O operations and display:
 - Process ID and command name
 - File descriptor
 - Operation type

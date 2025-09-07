@@ -19,8 +19,8 @@ struct io_evt_t {
     int via_epoll;
     int msg_dontwait;
 
-    u16 family;        // AF_INET / AF_INET6 / AF_NETLINK など
-    u16 rport;         // inet: network order / netlink: groups 下位16bit
+    u16 family;        // AF_INET / AF_INET6 / AF_NETLINK etc
+    u16 rport;         // inet: network order / netlink: groups lower 16bit
     u32 raddr4;        // inet: network order / netlink: nl_pid
     unsigned char raddr6[16];
 };
@@ -41,10 +41,18 @@ BPF_HASH(accept_ctx,  u64, struct accept_ctx_t);
 BPF_PERF_OUTPUT(events);
 
 static __always_inline int is_target() {
+    #if {USE_PID_FILTER}
+    // PID filtering mode
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    if (pid != {TARGET_PID}) return 0;
+    return 1;
+    #else
+    // Process name filtering mode
     char comm[16]; bpf_get_current_comm(&comm, sizeof(comm));
     const char TARGET_COMM[] = "{TARGET_COMM}";
     if (__builtin_memcmp(comm, TARGET_COMM, sizeof(TARGET_COMM)-1) != 0) return 0;
     return 1;
+    #endif
 }
 static __always_inline void fill_state(struct io_evt_t *e){
     struct key_t key = {.pid=e->pid, .fd=e->fd};

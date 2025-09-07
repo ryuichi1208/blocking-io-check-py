@@ -111,6 +111,11 @@ def main():
         help="target process name (comm), default: python3",
     )
     parser.add_argument(
+        "--pid",
+        type=int,
+        help="filter by specific PID (overrides process-name filter)",
+    )
+    parser.add_argument(
         "-b",
         "--bpf-file",
         default=DEFAULT_BPF_FILE,
@@ -130,7 +135,18 @@ def main():
         sys.exit(1)
 
     with open(args.bpf_file, "r") as f:
-        src = f.read().replace("{TARGET_COMM}", args.process_name)
+        src = f.read()
+
+    # PIDフィルタリングモードまたはプロセス名フィルタリングモード
+    if args.pid:
+        # PID指定モード: {TARGET_PID}を指定されたPIDに置き換え
+        src = src.replace("{TARGET_PID}", str(args.pid))
+        src = src.replace("{USE_PID_FILTER}", "1")
+    else:
+        # プロセス名モード: {TARGET_COMM}をプロセス名に置き換え
+        src = src.replace("{TARGET_COMM}", args.process_name)
+        src = src.replace("{USE_PID_FILTER}", "0")
+        src = src.replace("{TARGET_PID}", "0")  # デフォルト値
 
     b = BPF(text=src)
 
@@ -147,9 +163,10 @@ def main():
     # perf buffer
     b["events"].open_perf_buffer(make_print_event(args.hide_dns, args.hide_netlink))
 
-    print(
-        "Tracing Python socket I/O (connect/accept + sendto/recvfrom + write/read + recvmsg-exit + netlink)… Ctrl-C to stop"
-    )
+    if args.pid:
+        print(f"Tracing socket I/O for PID {args.pid}… Ctrl-C to stop")
+    else:
+        print(f"Tracing socket I/O for process '{args.process_name}'… Ctrl-C to stop")
     while True:
         b.perf_buffer_poll()
 
