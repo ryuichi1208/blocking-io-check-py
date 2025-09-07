@@ -23,18 +23,12 @@ This tool uses eBPF (extended Berkeley Packet Filter) to trace Python socket I/O
 - BCC (BPF Compiler Collection)
 - Root privileges for eBPF operations
 
-## Installation
-
-```bash
-pip install -r pyproject.toml
-```
-
 ## Usage
 
 Run as root:
 
 ```bash
-sudo python3 blocking_io_check.py
+sudo uv run blocking_io_check.py
 ```
 
 The tool will trace all Python socket I/O operations and display:
@@ -58,11 +52,3 @@ ruff check .
 # Format code  
 ruff format .
 ```
-
-### CI/CD
-
-GitHub Actions automatically runs linting and formatting checks on push and pull requests.
-
-## License
-
-MIT
