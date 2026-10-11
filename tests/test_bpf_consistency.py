@@ -115,6 +115,33 @@ def test_all_placeholders_are_known():
     assert placeholders, "expected the source to contain placeholders"
 
 
+# BCC の src/cc/export/helpers.h が定義するマップ宣言マクロのうち、このツールで
+# 使ってよいもの。BPF_LRU_HASH は libbpf 系プロジェクトが自前で定義する名前で
+# BCC には無く、CI でコンパイルできないまま実機で初めて壊れた (#10)。
+# LRU が必要なら BPF_TABLE("lru_hash", ...) と書く。
+BCC_MAP_MACROS = {
+    "BPF_TABLE",
+    "BPF_F_TABLE",
+    "BPF_HASH",
+    "BPF_ARRAY",
+    "BPF_PERCPU_HASH",
+    "BPF_PERCPU_ARRAY",
+    "BPF_HISTOGRAM",
+    "BPF_PERF_OUTPUT",
+    "BPF_RINGBUF_OUTPUT",
+    "BPF_STACK_TRACE",
+}
+
+
+def test_map_declarations_use_bcc_macros():
+    """マップ宣言が BCC に実在するマクロだけで書かれていること。"""
+    src = source()
+    used = set(re.findall(r"^(BPF_[A-Z_]+)\(", src, re.MULTILINE))
+    assert used, "no map declarations found"
+    unknown = used - BCC_MAP_MACROS
+    assert not unknown, f"not a BCC map macro: {sorted(unknown)}"
+
+
 def test_send_recv_comment_present():
     """send/recv を「追加し忘れ」だと誤解して足されないようコメントを残す。"""
     src = source()
