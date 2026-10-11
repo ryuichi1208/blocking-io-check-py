@@ -103,9 +103,10 @@ struct connect_ctx_t { int fd; void *uaddr; };
 struct accept_ctx_t  { void *upeer; int flags; };
 struct fcntl_ctx_t   { int fd; int cmd; };
 
-BPF_LRU_HASH(fd_nonblock, struct key_t, u8, 65536);
-BPF_LRU_HASH(fd_epoll,    struct key_t, u8, 65536);
-BPF_LRU_HASH(peer_map,    struct key_t, struct peer_t, 65536);
+// BCC に BPF_LRU_HASH マクロは無い。LRU は BPF_TABLE で型名を渡して宣言する。
+BPF_TABLE("lru_hash", struct key_t, u8,            fd_nonblock, 65536);
+BPF_TABLE("lru_hash", struct key_t, u8,            fd_epoll,    65536);
+BPF_TABLE("lru_hash", struct key_t, struct peer_t, peer_map,    65536);
 BPF_HASH(io_start,    u64, struct io_start_t, 16384);
 BPF_HASH(connect_ctx, u64, struct connect_ctx_t, 4096);
 BPF_HASH(accept_ctx,  u64, struct accept_ctx_t, 4096);
